@@ -1,1 +1,4 @@
-image-extract-poc
+/image-extract-poc
+vendor
+go.mod
+go.sum
