@@ -26,7 +26,7 @@ func readParams() (string, string, *os.File) {
 		var err error
 		dstFile, err = os.Create(os.Args[3])
 		if err != nil {
-			fmt.Errorf("Error creating output file: %v", err)
+			fmt.Printf("Error creating output file: %v", err)
 			os.Exit(2)
 		}
 	} else {
@@ -45,7 +45,7 @@ func closeImage(src types.ImageSource) {
 func commandTimeoutContext() (context.Context, context.CancelFunc) {
 	ctx := context.Background()
 	var cancel context.CancelFunc
-	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 300*time.Second)
 	return ctx, cancel
 }
 
@@ -71,7 +71,7 @@ func readImageSource(ctx context.Context, sys *types.SystemContext, img string) 
 
 func copyFile(tarReader *tar.Reader, dstFile *os.File) {
 	if _, err := io.Copy(dstFile, tarReader); err != nil {
-		fmt.Errorf("Error copying file: %v", err)
+		fmt.Printf("Error copying file: %v", err)
 		os.Exit(2)
 	}
 }
@@ -81,14 +81,14 @@ func processLayer(ctx context.Context, sys *types.SystemContext, src types.Image
 
 	reader, _, err := src.GetBlob(ctx, layer, cache)
 	if err != nil {
-		fmt.Errorf("Could not read layer: %v", err)
+		fmt.Printf("Could not read layer: %v", err)
 		os.Exit(2)
 	}
 	defer reader.Close()
 
 	gzipReader, err := gzip.NewReader(reader)
 	if err != nil {
-		fmt.Errorf("Error creating gzip reader: %v", err)
+		fmt.Printf("Error creating gzip reader: %v", err)
 		os.Exit(2)
 	}
 	defer gzipReader.Close()
@@ -100,7 +100,7 @@ func processLayer(ctx context.Context, sys *types.SystemContext, src types.Image
 			break // End of archive
 		}
 		if err != nil {
-			fmt.Errorf("Error reading layer: %v", err)
+			fmt.Printf("Error reading layer: %v", err)
 			os.Exit(2)
 		}
 
@@ -129,7 +129,7 @@ func main() {
 
 	imgCloser, err := image.FromSource(ctx, sys, src)
 	if err != nil {
-		fmt.Errorf("Error retrieving image: %v", err)
+		fmt.Printf("Error retrieving image: %v", err)
 		os.Exit(2)
 	}
 	defer imgCloser.Close()
