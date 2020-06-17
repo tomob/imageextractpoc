@@ -79,17 +79,23 @@ func copyFile(tarReader *tar.Reader, dstFile *os.File) {
 func processLayer(ctx context.Context, sys *types.SystemContext, src types.ImageSource, layer types.BlobInfo, srcFile string, dstFile *os.File, cache types.BlobInfoCache) {
 	// fmt.Printf("Reading layer %v\n", layer.Digest)
 
+	var reader io.ReadCloser
 	reader, _, err := src.GetBlob(ctx, layer, cache)
 	if err != nil {
 		fmt.Printf("Could not read layer: %v", err)
 		os.Exit(2)
 	}
-	defer reader.Close()
 
-	gzipReader, err := gzip.NewReader(reader)
+	var gzipReader io.ReadCloser
+	gzipReader, err = gzip.NewReader(reader)
 	if err != nil {
-		fmt.Printf("Error creating gzip reader: %v", err)
-		os.Exit(2)
+		fmt.Printf("Error creating gzip reader: %v\n", err)
+
+		// The stream is not gziped. Need to recreate the reader for tar library
+		reader.Close()
+		gzipReader, _, _ = src.GetBlob(ctx, layer, cache)
+	} else {
+		defer reader.Close()
 	}
 	defer gzipReader.Close()
 
@@ -104,6 +110,7 @@ func processLayer(ctx context.Context, sys *types.SystemContext, src types.Image
 			os.Exit(2)
 		}
 
+		// fmt.Printf("hdr.Name %v %v\n", hdr.Name, hdr.Size)
 		if hdr.Name == srcFile {
 			copyFile(tarReader, dstFile)
 			os.Exit(0)
